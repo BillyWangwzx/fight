@@ -33,6 +33,7 @@ def all_legal_move(cards):
     if 13 in cards and 14 in cards:
         combs.append([13, 14])
     combs.extend(detect_con(cards))
+    combs.extend(detect_double_con(cards))
     return combs
 
 
@@ -125,7 +126,9 @@ def legal_move_after(last_card, cards):
             combs.extend(detect_bomb(cards, minimum))
         else:
             combs.extend(detect_bomb(cards))
-            if max(dic.values()) == 3:
+            if len(last_card) >= 6 and min(dic.values()) == 2:
+                combs.extend(detect_double_con(cards, len(dic), minimum))
+            elif max(dic.values()) == 3:
                 combs.extend(detect_triple(cards, minimum, len(last_card) - 3))
             elif len(last_card) == 2:
                 combs.extend(detect_double(cards, minimum))
@@ -136,26 +139,35 @@ def legal_move_after(last_card, cards):
         return combs
 
 
-#TODO
+
 def detect_double_con(cards, length=False, minimum=-1):
     # 对顺,最短5最长12，3~A
+    dic = {}
+    for i in cards:
+        dic[i] = dic.get(i, 0)+1
     combs = []
-    distinct_cards = sorted(list(set(cards)))
+    distinct_cards = sorted(list(dic.keys()))
     cs = 0
     last = distinct_cards[0] - 1
     for i in distinct_cards:
-        if i > minimum and i < 12:
-            if distinct_cards[i] > 1:
+        if 12 > i > minimum:
+            if dic[i] > 1:
                 if i - last == 1:
                     cs += 1
                     if cs >= 3:
                         if not length:
-                            combs.extend([list(range(i + 1 - j, i + 1)) * 2 for j in range(5, cs + 1)])
-                    elif cs >= length:
-                        combs.append([list(range(i + 1 - length, i + 1)) * 2])
+                            combs.extend([list(range(i + 1 - j, i + 1)) * 2 for j in range(3, cs + 1)])
+                        elif cs >= length:
+                            combs.append(list(range(i + 1 - length, i + 1)) * 2)
                 else:
                     cs = 1
                 last = i
             else:
                 pass
     return combs
+
+ALL_POSSIBLE_MOVE = all_legal_move(list(range(13)) + list(range(13)) + list(range(13)) + list(range(13)) + [13, 14])
+ALL_POSSIBLE_MOVE_DICT = {}
+for card, i in zip(ALL_POSSIBLE_MOVE, range(len(ALL_POSSIBLE_MOVE))):
+    card = tuple(card)
+    ALL_POSSIBLE_MOVE_DICT[card] = i

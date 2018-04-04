@@ -15,7 +15,7 @@ class ResNet(object):
         self.inpkern_width = inpkern_width
         self.inpkern_height = inpkern_height
 
-    def create(self, input_width=15, input_height=5):
+    def create(self, input_width=15, input_height=7):
         bn_axis = 3
         inp = Input(shape=(input_height, input_width))
 
@@ -27,7 +27,15 @@ class ResNet(object):
         for i in range(self.n_stages):
             x = self.res_block(x, [self.filter_N, self.filter_N], stage=i + 1, block='a')
 
-        self.model = Model(inp, x)
+        res = Conv2D(1, (1, 1))(x)
+        res = BatchNormalization(axis=bn_axis)(res)
+        res = Activation('relu')(res)
+        res = Flatten()(res)
+        res = Dense(256, activation='relu')(res)
+        res = Dense(1, activation='sigmoid', name='result')(res)
+
+        self.model = Model(inp, res)
+        self.model.compile(loss='mean_squared_error', optimizer='nadam', metrics=['mae'])
         return self.model
 
     def res_block(self, input_tensor, filters, stage, block):
@@ -41,7 +49,7 @@ class ResNet(object):
         x = Activation('relu')(x)
         x = Conv2D(nb_filter2, (self.kernel_height, self.kernel_width), padding='same', name=conv_name_base+'_b')(x)
         x = add([x, input_tensor])
-        x = BatchNormalization(axis=bn_name_base, name=bn_name_base+'_b')(x)
+        x = BatchNormalization(axis=bn_axis, name=bn_name_base+'_b')(x)
         x = Activation('relu')(x)
 
         return x
